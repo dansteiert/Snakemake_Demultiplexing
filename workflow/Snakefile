@@ -1,0 +1,139 @@
+from pathlib import Path
+import os
+import pandas as pd
+
+
+
+def gen_sample_postfix_list(sample_list, demultiplexing_matrix_file_list):
+    sample_postfix_list = []
+    for sample, matrix_file in zip(sample_list, demultiplexing_matrix_file_list):
+        df = pd.read_csv(demultiplexing_matrix_file_list,header=False,names=["Sequence", "Name"])
+        post_fixes = set(df["Name"])
+        for pf in post_fixes:
+            sample_postfix_list.append(f"{sample}_{pf}")
+    return sample_postfix_list
+
+
+wrkdir = Path(config["wrkdir"])
+log_dir = Path(config["logdir"])
+split_count = config["split_count"]
+sample_list = config["sample_list"]
+demultiplexing_matrix_file_list = config["demultiplexing_matrix_file_list"]
+
+tmp_dir = "tmp"
+split_dir = "splits"
+demultiplex_dir = "demultiplexed"
+merged_dir = "demultiplexed_merge"
+
+sample_postfix_list = gen_sample_postfix_list(sample_list=sample_list, demultiplexing_matrix_file_list=demultiplexing_matrix_file_list)
+
+
+
+
+container: "docker://condaforge/mambaforge"
+
+
+rule all:
+    input:
+        expand(os.path.join(wrkdir,tmp_dir,merged_dir, "{sample_postfix}.fastq.gz"), sample_postfix=sample_postfix_list)
+
+
+rule fastqsplitter:
+    input:
+        read = os.path.join(wrkdir,tmp_dir,split_dir,"{sample}.fastq.gz"),
+    output:
+        splitt_files=expand(
+            os.path.join(wrkdir,tmp_dir,split_dir,"{{sample}}_Split_{split_no}.fastq.gz"),
+            split_no=[
+                "00" + str(i) if i > 9 else "000" + str(i)
+                for i in range(split_count)
+            ],
+        ),
+    params:
+        split_count=split_count,
+        output_list =  "--output " + " --output ".join([os.path.join(wrkdir,tmp_dir,split_dir,"{{sample}}_Split_{split_no}.fastq.gz")
+                                                        for split_no in [
+                "00" + str(i) if i > 9 else "000" + str(i)
+                for i in range(split_count)
+            ]]),
+    conda:
+        "envs/fastq_preprocessing.yml"
+    threads:
+        split_count
+    log:
+        os.path.join(wrkdir, log_dir, "fastqsplitter", "{sample}.log")
+    resources:
+        mem_mb=2000,
+        runtime=7*24*60,
+        node=1,
+    shell:
+        "fastqsplitter "
+        "--input {input.read} "
+        "--compression-level 1 "
+        "--threads-per-file 1 "
+        "{params.output_list} "
+        "&> {log}"
+
+
+rule demultiplexing:
+    input:
+        read_1 = os.path.join(wrkdir,tmp_dir,split_dir,"{sample}_R1_Split_{split_no}.fastq.gz"),
+        read_2 = os.path.join(wrkdir,tmp_dir,split_dir,"{sample}_R2_Split_{split_no}.fastq.gz"),
+        demultiplexing_matrix_file = demultiplexing_matrix_file
+    output:
+        read_1 = expand(os.path.join(wrkdir,tmp_dir,demultiplex_dir, "{sample}", "{sample}_R1_Split_{split_no}_{postfix}.fastq.gz"), postfix=postfix_list),
+        read_2 = expand(os.path.join(wrkdir,tmp_dir,demultiplex_dir,"{sample}", "{sample}_R2_Split_{split_no}_{postfix}.fastq.gz"), postfix=postfix_list),
+        outdir = directory(os.path.join(wrkdir,tmp_dir,demultiplex_dir, "{sample}"))
+    params:
+        new_demultiplexing_matrix_file = os.path.join(wrkdir,tmp_dir,demultiplex_dir, "demultiplex_matrix_file_{sample}_{split_no}.tsv")
+    conda:
+        "envs/fastq_preprocessing.yml"
+    threads:
+        1
+    log:
+        os.path.join(wrkdir, log_dir, "demultiplex", "{sample}_{split_no}.log")
+    resources:
+        mem_mb=4000,
+        runtime=7*24*60,
+        node=1,
+    shell:
+        "cp {input.demultiplexing_matrix_file} {params.new_demultiplexing_matrix_file}; "
+        "demultiplex demux "
+        "-p {output.outdir} "
+        "{input.demultiplexing_matrix_file} "
+        "{input.read_1} "
+        "{input.read_2} "
+        "&> {log}"
+
+
+rule merge_demultiplexed_files:
+    input:
+        read = expand(
+            os.path.join(wrkdir,tmp_dir,demultiplex_dir, "{sample}", "{sample}_Split_{split_no}_{postfix}.fastq.gz"),
+            split_no=[
+                "00" + str(i) if i > 9 else "000" + str(i)
+                for i in range(split_count)
+            ],
+        )
+    output:
+        read = os.path.join(wrkdir,tmp_dir,merged_dir, "{sample}_{postfix}.fastq.gz"),
+    params:
+        read_list = " ".join([os.path.join(wrkdir,tmp_dir,demultiplex_dir, "{sample}", "{sample}_Split_{split_no}_{postfix}.fastq.gz")
+                              for split_no in [
+                "00" + str(i) if i > 9 else "000" + str(i)
+                for i in range(split_count)
+            ]])
+    conda:
+        "envs/fastq_preprocessing.yml"
+    threads:
+        1
+    log:
+        os.path.join(wrkdir, log_dir, "merge", "{sample}_{postfix}.log")
+    resources:
+        mem_mb=4000,
+        runtime=7*24*60,
+        node=1,
+    shell:
+        "cat {params.read_list} "
+        "> {output.read} "
+        "&> {log}"
