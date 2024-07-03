@@ -7,7 +7,7 @@ import pandas as pd
 def gen_sample_postfix_list(sample_list, demultiplexing_matrix_file_list):
     sample_postfix_list = []
     for sample, matrix_file in zip(sample_list, demultiplexing_matrix_file_list):
-        df = pd.read_csv(demultiplexing_matrix_file_list,header=False,names=["Name", "Sequence"], sep="\t")
+        df = pd.read_csv(demultiplexing_matrix_file_list,header=None,names=["Name", "Sequence"], sep="\t")
         post_fixes = set(df["Name"])
         for pf in post_fixes:
             sample_postfix_list.append(f"{sample}_{pf}")
