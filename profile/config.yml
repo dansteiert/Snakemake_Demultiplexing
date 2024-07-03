@@ -1,0 +1,22 @@
+jobs: 60 # number of concurrent jobs (if slurm is used otherwise #Jobs refer    ece to the available cores)
+### using slurm as executor engin
+#slurm: True  # To be used in snakemake 7
+executor: slurm # to be used in snakemake 8
+
+### using a containerized version
+#use-singularity: True # snakemake7
+software-deployment-method: apptainer # snakemake 8
+singularity-prefix: /data/cephfs-1/work/groups/keller/users/steiertd_c/.appt    ainer/
+singularity-args: "-B /data/cephfs-1/work/projects/scrnaseq-um/:/data/cephfs    -1/work/projects/scrnaseq-um/,/data/cephfs-1/scratch/projects/scrnaseq-um/:/    data/cephfs-1/scratch/projects/scrnaseq-um/  # currently not working in snak    emake 8
+
+### using conda to manage environments
+use-conda: true
+# conda-prefix: Path were environments should be stored
+
+### Snakemake behaviour
+latency-wait: 60
+keep-going: True
+printshellcmds: True
+rerun-incomplete: True
+restart-times: 0
+# delete-temp-output: True
