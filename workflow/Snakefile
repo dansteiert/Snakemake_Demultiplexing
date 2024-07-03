@@ -19,6 +19,7 @@ log_dir = Path(config["logdir"])
 split_count = config["split_count"]
 sample_list = config["sample_list"]
 demultiplexing_matrix_file_list = config["demultiplexing_matrix_file_list"]
+metadata_file = config["metadata_file"]
 
 tmp_dir = "tmp"
 split_dir = "splits"
@@ -53,7 +54,6 @@ rule create_links:
         nodes=1,
     threads: 1
     run:
-        import pandas as pd
         df_metadata = pd.read_csv(input.metadata)
         df_metadata = df_metadata[df_metadata["Sample_Name"].isin(sample_list)]
         os.makedirs(os.path.join(wrkdir, symlink_dir), exist_ok=True)
