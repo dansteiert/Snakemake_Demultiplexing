@@ -42,7 +42,7 @@ rule all:
 
 rule create_links:
     input:
-        metadata=metadata,
+        metadata=metadata_file,
     params:
         alignment_dir=os.path.join(wrkdir, symlink_dir),
     output:
