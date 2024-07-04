@@ -128,7 +128,6 @@ rule demultiplexing:
         outdir = directory(os.path.join(wrkdir,tmp_dir,demultiplex_dir, "{sample}"))
     params:
         new_demultiplexing_matrix_file = os.path.join(wrkdir,tmp_dir,demultiplex_dir, "demultiplex_matrix_file_{sample}_{split_no}.tsv")
-        postfix
     conda:
         "../envs/demultiplex.yml"
     threads:
