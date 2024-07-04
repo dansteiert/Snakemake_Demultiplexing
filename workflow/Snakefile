@@ -10,8 +10,13 @@ def gen_sample_postfix_list(sample_list, demultiplexing_matrix_file_list):
         df = pd.read_csv(matrix_file,header=None,names=["Name", "Sequence"], sep="\t")
         post_fixes = set(df["Name"])
         for pf in post_fixes:
-            sample_postfix_list.append(f"{sample}_{pf}")
+            sample_postfix_list.append(f"{sample}_R1_{pf}")
+            sample_postfix_list.append(f"{sample}_R2_{pf}")
     return sample_postfix_list
+
+def gen_sample_postfix_match(wildcards):
+    df = pd.read_csv(os.path.join(wrkdir,symlink_dir,f"{wildcards.sample}_index.tsv"),header=None,names=["Name", "Sequence"],sep="\t")
+    return df["Name"].tolist()
 
 
 wrkdir = Path(config["wrkdir"])
@@ -27,7 +32,7 @@ demultiplex_dir = "demultiplexed"
 merged_dir = "demultiplexed_merge"
 symlink_dir = "symlinks"
 
-sample_postfix_list = gen_sample_postfix_list(sample_list=sample_list, demultiplexing_matrix_file_list=demultiplexing_matrix_file_list)
+sample_postfix_name_list = gen_sample_postfix_list(sample_list=sample_list, demultiplexing_matrix_file_list=demultiplexing_matrix_file_list)
 
 
 
@@ -37,7 +42,7 @@ container: "docker://condaforge/mambaforge"
 
 rule all:
     input:
-        expand(os.path.join(wrkdir,tmp_dir,merged_dir, "{sample_postfix}.fastq.gz"), sample_postfix=sample_postfix_list)
+        expand(os.path.join(wrkdir,tmp_dir,merged_dir, "{sample_postfix_name}.fastq.gz"), sample_postfix_name=sample_postfix_name_list)
 
 
 rule create_links:
@@ -118,11 +123,12 @@ rule demultiplexing:
         read_2 = os.path.join(wrkdir,tmp_dir,split_dir,"{sample}_R2_Split_{split_no}.fastq.gz"),
         demultiplexing_matrix_file = os.path.join(wrkdir,tmp_dir,symlink_dir,"{sample}_index.tsv")
     output:
-        read_1 = expand(os.path.join(wrkdir,tmp_dir,demultiplex_dir, "{sample}", "{sample}_R1_Split_{split_no}_{postfix}.fastq.gz"), postfix=postfix_list),
-        read_2 = expand(os.path.join(wrkdir,tmp_dir,demultiplex_dir,"{sample}", "{sample}_R2_Split_{split_no}_{postfix}.fastq.gz"), postfix=postfix_list),
+        read_1 = expand(os.path.join(wrkdir,tmp_dir,demultiplex_dir, "{sample}", "{sample}_R1_Split_{split_no}_{postfix}.fastq.gz"), postfix=lambda wildcards: gen_sample_postfix_match(wildcards=wildcards)),
+        read_2 = expand(os.path.join(wrkdir,tmp_dir,demultiplex_dir,"{sample}", "{sample}_R2_Split_{split_no}_{postfix}.fastq.gz"), postfix=lambda wildcards: gen_sample_postfix_match(wildcards=wildcards)),
         outdir = directory(os.path.join(wrkdir,tmp_dir,demultiplex_dir, "{sample}"))
     params:
         new_demultiplexing_matrix_file = os.path.join(wrkdir,tmp_dir,demultiplex_dir, "demultiplex_matrix_file_{sample}_{split_no}.tsv")
+        postfix
     conda:
         "../envs/demultiplex.yml"
     threads:
