@@ -135,7 +135,7 @@ rule demultiplexing:
         read_1 = expand(os.path.join(wrkdir,tmp_dir,demultiplex_dir, "{{sample}}", "{{sample}}_R1_Split_{{split_no}}_{postfix}.fastq.gz"), postfix=sample_postfix_name_dict.get("{sample}")),
         read_2 = expand(os.path.join(wrkdir,tmp_dir,demultiplex_dir, "{{sample}}", "{{sample}}_R2_Split_{{split_no}}_{postfix}.fastq.gz"), postfix=sample_postfix_name_dict.get("{sample}")),
         # read_2 = expand(os.path.join(wrkdir,tmp_dir,demultiplex_dir,"{sample}", "{sample}_R2_Split_{split_no}_{postfix}.fastq.gz"), postfix=lambda wildcards: gen_sample_postfix_match(wildcards=wildcards)),
-        outdir = directory(os.path.join(wrkdir,tmp_dir,demultiplex_dir, "{sample}"))
+        # outdir = directory(os.path.join(wrkdir,tmp_dir,demultiplex_dir, "{sample}"))
     params:
         new_demultiplexing_matrix_file = os.path.join(wrkdir,tmp_dir,demultiplex_dir, "demultiplex_matrix_file_{sample}_{split_no}.tsv")
     conda:
