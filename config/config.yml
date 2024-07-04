@@ -1,6 +1,7 @@
 wrkdir: Path
 logdir: Path
 split_count: 10
-sample_list: [Sample1, Sample2]
-demultiplexing_matrix_file_list: [demultiplexing_matrix_file_Sample1, demultiplexing_matrix_file_Sample2]
+sample_name: Sample1
+index_file: demultiplexing_matrix_file_Sample
+indices_name: ["Index_Name1","Index_Name2","Index_Name3",...]
 metadata_file: Path
