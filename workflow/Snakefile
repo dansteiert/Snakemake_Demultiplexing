@@ -13,6 +13,13 @@ def gen_sample_postfix_list(sample_list, demultiplexing_matrix_file_list):
             sample_postfix_list.append(f"{sample}_R1_{pf}")
             sample_postfix_list.append(f"{sample}_R2_{pf}")
     return sample_postfix_list
+def gen_sample_postfix_dict(sample_list, demultiplexing_matrix_file_list):
+    sample_postfix_dict = {}
+    for sample, matrix_file in zip(sample_list, demultiplexing_matrix_file_list):
+        df = pd.read_csv(matrix_file,header=None,names=["Name", "Sequence"], sep="\t")
+        post_fixes = set(df["Name"])
+        sample_postfix_dict[sample] = list(post_fixes)
+    return sample_postfix_dict
 
 def gen_sample_postfix_match(wildcards):
     df = pd.read_csv(os.path.join(wrkdir,symlink_dir,f"{wildcards.sample}_index.tsv"),header=None,names=["Name", "Sequence"],sep="\t")["Name"].tolist()
@@ -33,6 +40,7 @@ merged_dir = "demultiplexed_merge"
 symlink_dir = "symlinks"
 
 sample_postfix_name_list = gen_sample_postfix_list(sample_list=sample_list, demultiplexing_matrix_file_list=demultiplexing_matrix_file_list)
+sample_postfix_name_dict = gen_sample_postfix_dict(sample_list=sample_list, demultiplexing_matrix_file_list=demultiplexing_matrix_file_list)
 
 
 
@@ -124,8 +132,8 @@ rule demultiplexing:
         demultiplexing_matrix_file = os.path.join(wrkdir,tmp_dir,symlink_dir,"{sample}_index.tsv")
     output:
         # read_1 = expand(os.path.join(wrkdir,tmp_dir,demultiplex_dir, "{sample}", "{sample}_R1_Split_{split_no}_{postfix}.fastq.gz"), postfix=lambda wildcards: gen_sample_postfix_match(wildcards=wildcards)),
-        read_1 = expand(os.path.join(wrkdir,tmp_dir,demultiplex_dir, "{{sample}}", "{{sample}}_R1_Split_{{split_no}}_{postfix}.fastq.gz"), postfix=[pd.read_csv(os.path.join(wrkdir,symlink_dir,"{sample}_index.tsv"),header=None,names=["Name", "Sequence"],sep="\t")["Name"].tolist()]),
-        read_2 = expand(os.path.join(wrkdir,tmp_dir,demultiplex_dir, "{{sample}}", "{{sample}}_R2_Split_{{split_no}}_{postfix}.fastq.gz"), postfix=[pd.read_csv(os.path.join(wrkdir,symlink_dir,"{sample}_index.tsv"),header=None,names=["Name", "Sequence"],sep="\t")["Name"].tolist()]),
+        read_1 = expand(os.path.join(wrkdir,tmp_dir,demultiplex_dir, "{{sample}}", "{{sample}}_R1_Split_{{split_no}}_{postfix}.fastq.gz"), postfix=sample_postfix_name_dict.get("{sample}")),
+        read_2 = expand(os.path.join(wrkdir,tmp_dir,demultiplex_dir, "{{sample}}", "{{sample}}_R2_Split_{{split_no}}_{postfix}.fastq.gz"), postfix=sample_postfix_name_dict.get("{sample}")),
         # read_2 = expand(os.path.join(wrkdir,tmp_dir,demultiplex_dir,"{sample}", "{sample}_R2_Split_{split_no}_{postfix}.fastq.gz"), postfix=lambda wildcards: gen_sample_postfix_match(wildcards=wildcards)),
         outdir = directory(os.path.join(wrkdir,tmp_dir,demultiplex_dir, "{sample}"))
     params:
@@ -153,7 +161,7 @@ rule demultiplexing:
 rule merge_demultiplexed_files:
     input:
         read = expand(
-            os.path.join(wrkdir,tmp_dir,demultiplex_dir, "{sample}", "{sample}_Split_{split_no}_{postfix}.fastq.gz"),
+            os.path.join(wrkdir,tmp_dir,demultiplex_dir, "{{sample}}", "{{sample}}_Split_{split_no}_{{postfix}}.fastq.gz"),
             split_no=[
                 "00" + str(i) if i > 9 else "000" + str(i)
                 for i in range(split_count)
