@@ -47,7 +47,8 @@ rule create_links:
         alignment_dir=os.path.join(wrkdir, symlink_dir),
     output:
         r1 = expand(os.path.join(wrkdir, symlink_dir,  "{sample}_R1.fastq.gz"), sample=sample_list),
-        r2 = expand(os.path.join(wrkdir,symlink_dir,"{sample}_R2.fastq.gz"),sample=sample_list)
+        r2 = expand(os.path.join(wrkdir,symlink_dir,"{sample}_R2.fastq.gz"),sample=sample_list),
+        index_file = expand(os.path.join(wrkdir,symlink_dir,"{sample}_index.tsv"),sample=sample_list)
     resources:
         mem_mb=1000,
         runtime=20,
@@ -58,11 +59,18 @@ rule create_links:
         df_metadata = df_metadata[df_metadata["Sample_Name"].isin(sample_list)]
         os.makedirs(os.path.join(wrkdir, symlink_dir), exist_ok=True)
         for index, row in df_metadata.iterrows():
+            # Fastq File
             fastq_file = Path(row["Absolute_Path"])
             output_file_Read = os.path.join(wrkdir, symlink_dir, f'{row["Sample_Name"]}_{row["Read"]}.fastq.gz')
             if os.path.exists(output_file_Read):
                 os.remove(output_file_Read)
             os.symlink(fastq_file, output_file_Read)
+            # Index File
+            index_file = Path(row["Absolute_Path_index_file"])
+            output_file_index = os.path.join(wrkdir, symlink_dir, f'{row["Sample_Name"]}_index.tsv')
+            if os.path.exists(output_file_index):
+                os.remove(output_file_index)
+            os.symlink(index_file, output_file_index)
 
 
 
@@ -86,7 +94,7 @@ rule fastqsplitter:
                 for i in range(split_count)
             ]]),
     conda:
-        "envs/fastq_preprocessing.yml"
+        "../envs/demultiplex.yml"
     threads:
         split_count
     log:
@@ -108,7 +116,7 @@ rule demultiplexing:
     input:
         read_1 = os.path.join(wrkdir,tmp_dir,split_dir,"{sample}_R1_Split_{split_no}.fastq.gz"),
         read_2 = os.path.join(wrkdir,tmp_dir,split_dir,"{sample}_R2_Split_{split_no}.fastq.gz"),
-        demultiplexing_matrix_file = demultiplexing_matrix_file
+        demultiplexing_matrix_file = os.path.join(wrkdir,tmp_dir,symlink_dir,"{sample}_index.tsv")
     output:
         read_1 = expand(os.path.join(wrkdir,tmp_dir,demultiplex_dir, "{sample}", "{sample}_R1_Split_{split_no}_{postfix}.fastq.gz"), postfix=postfix_list),
         read_2 = expand(os.path.join(wrkdir,tmp_dir,demultiplex_dir,"{sample}", "{sample}_R2_Split_{split_no}_{postfix}.fastq.gz"), postfix=postfix_list),
@@ -116,7 +124,7 @@ rule demultiplexing:
     params:
         new_demultiplexing_matrix_file = os.path.join(wrkdir,tmp_dir,demultiplex_dir, "demultiplex_matrix_file_{sample}_{split_no}.tsv")
     conda:
-        "envs/fastq_preprocessing.yml"
+        "../envs/demultiplex.yml"
     threads:
         1
     log:
@@ -129,7 +137,7 @@ rule demultiplexing:
         "cp {input.demultiplexing_matrix_file} {params.new_demultiplexing_matrix_file}; "
         "demultiplex demux "
         "-p {output.outdir} "
-        "{input.demultiplexing_matrix_file} "
+        "{params.new_demultiplexing_matrix_file} "
         "{input.read_1} "
         "{input.read_2} "
         "&> {log}"
@@ -152,8 +160,6 @@ rule merge_demultiplexed_files:
                 "00" + str(i) if i > 9 else "000" + str(i)
                 for i in range(split_count)
             ]])
-    conda:
-        "envs/fastq_preprocessing.yml"
     threads:
         1
     log:
