@@ -3,7 +3,7 @@ channels:
   - bioconda
   - conda-forge
 dependencies:
-  - fastqsplitter=1.2.0=py312hf67a6ed_6
+  - fastqsplitter=1.2.0
   - pandas
   - pip
   - pip:

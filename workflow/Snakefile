@@ -56,8 +56,6 @@ rule all:
 rule create_links:
     input:
         metadata=metadata_file,
-    params:
-        alignment_dir=os.path.join(wrkdir, tmp_dir, symlink_dir),
     output:
         r1 = os.path.join(wrkdir, tmp_dir, symlink_dir, "{sample}_R1.fastq.gz"),
         r2 = os.path.join(wrkdir,tmp_dir, symlink_dir,"{sample}_R2.fastq.gz"),
@@ -74,13 +72,13 @@ rule create_links:
         for index, row in df_metadata.iterrows():
             # Fastq File
             fastq_file = Path(row["Absolute_Path"])
-            output_file_Read = os.path.join(wrkdir, symlink_dir, f'{row["Sample_Name"]}_{row["Read"]}.fastq.gz')
+            output_file_Read = os.path.join(wrkdir, tmp_dir, symlink_dir, f'{row["Sample_Name"]}_{row["Read"]}.fastq.gz')
             if os.path.exists(output_file_Read):
                 os.remove(output_file_Read)
             os.symlink(fastq_file, output_file_Read)
             # Index File
             index_file = Path(row["Absolute_Path_index_file"])
-            output_file_index = os.path.join(wrkdir, symlink_dir, f'{row["Sample_Name"]}_index.tsv')
+            output_file_index = os.path.join(wrkdir, tmp_dir, symlink_dir, f'{row["Sample_Name"]}_index.tsv')
             if os.path.exists(output_file_index):
                 os.remove(output_file_index)
             os.symlink(index_file, output_file_index)
