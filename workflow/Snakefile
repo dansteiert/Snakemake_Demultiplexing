@@ -166,7 +166,7 @@ rule merge_demultiplexed_files:
     output:
         read = os.path.join(wrkdir,demultiplex_dir, "{sample}_{Read}_{postfix}.fastq.gz"),
     params:
-        read_list = " ".join([os.path.join(wrkdir,tmp_dir,demultiplex_dir, "{sample}", "{sample}_Split_{split_no}_{postfix}.fastq.gz")
+        read_list = lambda wildcards:" ".join([os.path.join(wrkdir,tmp_dir,demultiplex_dir, f"{wildcards.sample}", f"{wildcards.sample}_{wildcards.Read}_Split_{split_no}_{wildcards.postfix}.fastq.gz")
                               for split_no in [
                 "00" + str(i) if i > 9 else "000" + str(i)
                 for i in range(split_count)
