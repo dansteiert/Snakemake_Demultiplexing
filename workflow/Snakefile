@@ -97,7 +97,7 @@ rule fastqsplitter:
             split_no=["00" + str(i) if i > 9 else "000" + str(i) for i in range(split_count)]),
     params:
         split_count=split_count,
-        output_list =  "--output " + " --output ".join([os.path.join(wrkdir,tmp_dir,split_dir,"{{sample}}_Split_{split_no}.fastq.gz")
+        output_list = lambda wildcards: "--output " + " --output ".join([os.path.join(wrkdir,tmp_dir,split_dir,f"{wildcards.sample}_Split_{split_no}.fastq.gz")
                                                         for split_no in [
                 "00" + str(i) if i > 9 else "000" + str(i)
                 for i in range(split_count)
@@ -133,7 +133,7 @@ rule demultiplexing:
         # read_2 = expand(os.path.join(wrkdir,tmp_dir,demultiplex_dir,"{sample}", "{sample}_R2_Split_{split_no}_{postfix}.fastq.gz"), postfix=lambda wildcards: gen_sample_postfix_match(wildcards=wildcards)),
         # outdir = directory(os.path.join(wrkdir,tmp_dir,demultiplex_dir, "{sample}"))
     params:
-        new_demultiplexing_matrix_file = os.path.join(wrkdir,tmp_dir,demultiplex_dir, "demultiplex_matrix_file_{sample}_{split_no}.tsv")
+        new_demultiplexing_matrix_file = lambda wildcards: os.path.join(wrkdir,tmp_dir,demultiplex_dir, f"demultiplex_matrix_file_{wildcards.sample}_{wildcards.split_no}.tsv")
     conda:
         "../envs/demultiplex.yml"
     threads:
