@@ -29,7 +29,7 @@ import pandas as pd
 wrkdir = Path(config["wrkdir"])
 log_dir = Path(config["logdir"])
 split_count = config["split_count"]
-sample_name = config["sample"]
+sample_name = config["sample_name"]
 index_file = config["index_file"]
 indices_names = config["indices_names"]
 metadata_file = config["metadata_file"]
