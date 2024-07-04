@@ -57,11 +57,11 @@ rule create_links:
     input:
         metadata=metadata_file,
     params:
-        alignment_dir=os.path.join(wrkdir, symlink_dir),
+        alignment_dir=os.path.join(wrkdir, tmp_dir, symlink_dir),
     output:
-        r1 = os.path.join(wrkdir, symlink_dir, "{sample}_R1.fastq.gz"),
-        r2 = os.path.join(wrkdir,symlink_dir,"{sample}_R2.fastq.gz"),
-        index_file = os.path.join(wrkdir,symlink_dir,"{sample}_index.tsv")
+        r1 = os.path.join(wrkdir, tmp_dir, symlink_dir, "{sample}_R1.fastq.gz"),
+        r2 = os.path.join(wrkdir,tmp_dir, symlink_dir,"{sample}_R2.fastq.gz"),
+        index_file = os.path.join(wrkdir,tmp_dir, symlink_dir,"{sample}_index.tsv")
     resources:
         mem_mb=1000,
         runtime=20,
