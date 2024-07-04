@@ -37,7 +37,7 @@ metadata_file = config["metadata_file"]
 tmp_dir = "tmp"
 split_dir = "splits"
 demultiplex_dir = "demultiplexed"
-merged_dir = "demultiplexed_merge"
+# merged_dir = "demultiplexed_merge"
 symlink_dir = "symlinks"
 
 # sample_postfix_name_list = gen_sample_postfix_list(sample_list=sample_list, demultiplexing_matrix_file_list=demultiplexing_matrix_file_list)
@@ -51,7 +51,7 @@ container: "docker://condaforge/mambaforge"
 
 rule all:
     input:
-        expand(os.path.join(wrkdir,tmp_dir,merged_dir, "{sample_name}_{Read}_{indices_names}.fastq.gz"), sample_name=sample_name, indices_names=indices_names, Read=["R1", "R2"])
+        expand(os.path.join(wrkdir,demultiplex_dir, "{sample_name}_{Read}_{indices_names}.fastq.gz"), sample_name=sample_name, indices_names=indices_names, Read=["R1", "R2"])
 
 rule create_links:
     input:
