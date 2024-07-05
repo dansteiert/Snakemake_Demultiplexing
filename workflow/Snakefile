@@ -181,3 +181,5 @@ rule merge_demultiplexed_files:
         "cat {params.read_list} "
         "> {output.read} "
         "&> {log}"
+
+# TODO: There is an error somewhere (might be fixed by latest push) within the create symlink function
