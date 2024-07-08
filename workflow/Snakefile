@@ -42,33 +42,42 @@ symlink_dir = "symlinks"
 
 # sample_postfix_name_list = gen_sample_postfix_list(sample_list=sample_list, demultiplexing_matrix_file_list=demultiplexing_matrix_file_list)
 # sample_postfix_name_dict = gen_sample_postfix_dict(sample_list=sample_list, demultiplexing_matrix_file_list=demultiplexing_matrix_file_list)
+os.makedirs(os.path.join(wrkdir, tmp_dir, split_dir), exist_ok=True)
+print(config)
 
-
-
-
-container: "docker://condaforge/mambaforge"
+# container: "docker://condaforge/mambaforge"
 
 
 rule all:
     input:
         expand(os.path.join(wrkdir,demultiplex_dir, "{sample_name}_{Read}_{indices_names}.fastq.gz"), sample_name=sample_name, indices_names=indices_names, Read=["R1", "R2"])
 
+
+
 rule create_links:
     input:
-        metadata=metadata_file,
+        metadata = metadata_file,
+        index_file = index_file
     output:
         r1 = os.path.join(wrkdir, tmp_dir, symlink_dir, "{sample}_R1.fastq.gz"),
         r2 = os.path.join(wrkdir,tmp_dir, symlink_dir,"{sample}_R2.fastq.gz"),
         index_file = os.path.join(wrkdir,tmp_dir, symlink_dir,"{sample}_index.tsv")
+    log:
+        os.path.join(wrkdir, log_dir, "symlink_{sample}.log")
     resources:
         mem_mb=1000,
         runtime=20,
         nodes=1,
     threads: 1
     run:
+        output_file_index = os.path.join(wrkdir, tmp_dir, symlink_dir, f"{wildcards.sample}_index.tsv")
+        if os.path.exists(output_file_index):
+            os.remove(output_file_index)
+        os.symlink(input.index_file, output_file_index)
+
         df_metadata = pd.read_csv(input.metadata)
-        df_metadata = df_metadata[df_metadata["Sample_Name"].isin(sample_name)]
-        os.makedirs(os.path.join(wrkdir, symlink_dir), exist_ok=True)
+        df_metadata = df_metadata[df_metadata["Sample_Name"].isin([f"{wildcards.sample}"])]
+        os.makedirs(os.path.join(wrkdir, tmp_dir, symlink_dir), exist_ok=True)
         for index, row in df_metadata.iterrows():
             # Fastq File
             fastq_file = Path(row["Absolute_Path"])
@@ -76,14 +85,7 @@ rule create_links:
             if os.path.exists(output_file_Read):
                 os.remove(output_file_Read)
             os.symlink(fastq_file, output_file_Read)
-            # Index File
-            index_file = Path(row["Absolute_Path_index_file"])
-            output_file_index = os.path.join(wrkdir, tmp_dir, symlink_dir, f'{row["Sample_Name"]}_index.tsv')
-            if os.path.exists(output_file_index):
-                os.remove(output_file_index)
-            os.symlink(index_file, output_file_index)
-
-
+        print(os.listdir(os.path.join(wrkdir, tmp_dir, symlink_dir)))
 
 
 rule fastqsplitter:
@@ -101,7 +103,7 @@ rule fastqsplitter:
                 for i in range(split_count)
             ]]),
     conda:
-        "../envs/demultiplex.yml"
+        "envs/demultiplex.yml"
     threads:
         split_count
     log:
@@ -133,7 +135,7 @@ rule demultiplexing:
     params:
         new_demultiplexing_matrix_file = lambda wildcards: os.path.join(wrkdir,tmp_dir,demultiplex_dir, f"demultiplex_matrix_file_{wildcards.sample}_{wildcards.split_no}.tsv")
     conda:
-        "../envs/demultiplex.yml"
+        "envs/demultiplex.yml"
     threads:
         1
     log:

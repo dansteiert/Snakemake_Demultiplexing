@@ -1,0 +1,11 @@
+name: demultiplex
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - fastqsplitter=1.2.0
+  - pandas
+  - pip
+  - pip:
+      - demultiplex==1.2.2
+prefix: /data/cephfs-1/work/groups/keller/users/steiertd_c/miniforge3/envs/demultiplex
